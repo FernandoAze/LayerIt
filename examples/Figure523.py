@@ -66,6 +66,6 @@ EndVisualization.create_final_SVG(
                                     width            = Layer_Width,
                                     height           = Layer_Height*3+(10*3),
                                     svg_layers       = combination_of_layers,
-                                    background_color = "#ffefcf",
+                                    background_color = "#ffffff",
                                     output_file      = str(output_dir / "FIG523.svg"),
                                     print_output     = True)

@@ -38,6 +38,6 @@ combination_of_layers = [(Waveform_wBeatThis, 25),(svg_score, Layer_Height + (2*
 EndVisualization.create_final_SVG(  width            = Layer_Width,
                                     height           = Layer_Height+50,
                                     svg_layers       = combination_of_layers,
-                                    background_color = "#ffefcf",
+                                    background_color = "#ffffff",
                                     output_file      = str(output_dir / "FIG524.svg"),
                                     print_output     = True)  

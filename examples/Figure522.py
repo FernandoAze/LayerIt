@@ -49,4 +49,4 @@ svg_layers_to_stack = [
     (Data_Layer, Layer_Height + (2*5))]
 
 EndVisualization = Visualizer()
-EndVisualization.create_final_SVG(width=Layer_Width,height=2*(Layer_Height+10), svg_layers=svg_layers_to_stack, background_color="#ffefcf", output_file=str(output_dir/"FIG522.svg"), print_output=True)
+EndVisualization.create_final_SVG(width=Layer_Width,height=2*(Layer_Height+10), svg_layers=svg_layers_to_stack, background_color="#ffffff", output_file=str(output_dir/"FIG522.svg"), print_output=True)

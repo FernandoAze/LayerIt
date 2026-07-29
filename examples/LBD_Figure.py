@@ -80,7 +80,7 @@ svg_layers_to_stack = [
     (Waveform_Layer, Layer_Height*3+15)]
 EndVisualization.create_final_SVG(  width              =Layer_Width,
                                     height             =Layer_Height*4+40,
-                                    background_color   = "#ffefb6",
+                                    background_color   = "#ffffff",
                                     svg_layers         = svg_layers_to_stack,
                                     output_file        = str(output_dir / "LDB_FIG.svg"),
                                     print_output       = True)

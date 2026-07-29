@@ -66,7 +66,7 @@ svg_layers_to_stack = [
     (Onset_Layer, Layer_Height*3 + (5*10))]
 EndVisualization.create_final_SVG(  width              =Layer_Width,
                                     height             =Layer_Height*4+(15*5),
-                                    background_color   = "#ffefcf",
+                                    background_color   = "#ffffff",
                                     svg_layers         = svg_layers_to_stack,
                                     output_file        = str(output_dir / "FIG521.svg"),
                                     print_output       = True)
