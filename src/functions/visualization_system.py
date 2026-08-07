@@ -299,6 +299,7 @@ class Visualizer:
             "width_px": width_px,
             "height_px": height_px,
             "show_axes": show_axes,
+            "probability_axes_added": False,
         }
         
         svg_groups = []

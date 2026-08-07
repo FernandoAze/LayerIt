@@ -149,6 +149,42 @@ class BeatLayer(Layer):
         ''' SVG Y increases downward, but we want probability to increase upward '''
         y_normalized = 1 - (prob / 100.0)
         return y_normalized * ctx["height_px"]
+
+    def _probability_axes_to_svg(self, ctx: Dict) -> List[str]:
+        '''Build the shared probability and timeline axes for SVG probability layers.'''
+        if not ctx.get("show_axes", False) or ctx.get("probability_axes_added", False):
+            return []
+
+        width_px = ctx["width_px"]
+        height_px = ctx["height_px"]
+        x_min = ctx["x_min"]
+        x_max = ctx["x_max"]
+
+        if x_max == x_min:
+            return []
+
+        ctx["probability_axes_added"] = True
+        parts = [
+            f'    <line x1="0" y1="0" x2="0" y2="{height_px}" stroke="#111" stroke-width="1"/>',
+            f'    <line x1="0" y1="{height_px}" x2="{width_px}" y2="{height_px}" stroke="#111" stroke-width="1"/>',
+        ]
+
+        for probability in range(0, 101, 25):
+            y = self._prob_to_pixel_y(probability, ctx)
+            parts.append(f'    <line x1="-4" y1="{y:.1f}" x2="0" y2="{y:.1f}" stroke="#111" stroke-width="1"/>')
+            parts.append(f'    <text x="-6" y="{y + 3:.1f}" text-anchor="end" font-size="8" font-family="Arial,sans-serif" fill="#111">{probability}%</text>')
+
+        t_start = int(np.ceil(x_min))
+        t_end = int(np.floor(x_max))
+        for time in range(t_start, t_end + 1):
+            x = self._time_to_pixel_x(time, ctx)
+            if time % 5 == 0:
+                parts.append(f'    <line x1="{x:.1f}" y1="{height_px}" x2="{x:.1f}" y2="{height_px + 6}" stroke="#111" stroke-width="1"/>')
+                parts.append(f'    <text x="{x:.1f}" y="{height_px + 14:.1f}" text-anchor="middle" font-size="8" font-family="Arial,sans-serif" fill="#111">{time}s</text>')
+            else:
+                parts.append(f'    <line x1="{x:.1f}" y1="{height_px}" x2="{x:.1f}" y2="{height_px + 4}" stroke="#111" stroke-width="0.7"/>')
+
+        return parts
     
     def _probability_to_svg_group(self, shared_data: Dict[str, Any], prob_key: str, svg_class: str, opacity: float = 1.0, line_width: float = 0.5) -> Optional[str]:
         '''
@@ -180,12 +216,12 @@ class BeatLayer(Layer):
         points_str = " ".join(points)
         color_hex = self._rgb_to_hex(self.color)
         opacity_attr = f' opacity="{opacity}"' if opacity < 1.0 else ''
-        
-        svg_group = f'''  <g id="{self.name}" class="layer {svg_class}">
-    <polyline points="{points_str}" stroke="{color_hex}" stroke-width="{line_width}" fill="none"{opacity_attr}/>
-  </g>'''
-        
-        return svg_group
+
+        parts = [f'  <g id="{self.name}" class="layer {svg_class}">']
+        parts.extend(self._probability_axes_to_svg(ctx))
+        parts.append(f'    <polyline points="{points_str}" stroke="{color_hex}" stroke-width="{line_width}" fill="none"{opacity_attr}/>')
+        parts.append('  </g>')
+        return '\n'.join(parts)
 
 class BeatProbabilityLayer(BeatLayer):
     """Visualizes beat probability outputs from BeatThis! algorithm."""
