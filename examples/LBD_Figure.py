@@ -47,7 +47,7 @@ beatProbs_layer.add_layer(BeatProbabilityLayer(line_width=0.7))
 beatProbs_layer.add_layer(DownbeatProbabilityLayer(line_width=0.7))
 beatProbs_layer.load_all_layers(audio_path=audio_file, beat_file=beat_file)
 fig, ax = beatProbs_layer.draw()
-beatProb=beatProbs_layer.turn_to_SVG(filename=str("beatProbs_Layer.svg"),svg_warped_score=svg_score, show_axes=True)
+beatProb=beatProbs_layer.turn_to_SVG(filename=str("beatProbs_Layer.svg"), svg_warped_score=svg_score, show_axes=True)
 #================================ BeatProb Layer ===============================
 EndVisualization = Visualizer()
 Layer_Width = onset_layer.get_SVG_Root_Dimensions(Waveform_Layer)[0]

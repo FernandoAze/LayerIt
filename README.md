@@ -63,7 +63,7 @@ Layers are assembled and rendered by a `Visualizer` instance, which manages the 
 ```
 Audio (.wav)
   ├─ Run_BeatThis()  →  beat_data.npz   ──────────────────────┐
-  └─ Spectrogram()   →  Mel spectrogram ──────────────────────┤
+  └─ Spectrogram() / Chromagram() / Waveform() ────────────────┤
                                                                ▼
 MAPS JSON + Warped Score SVG  →  Onsets_Layer / Warp_Score  → Visualizer
                                                                │
@@ -87,10 +87,12 @@ MAPS JSON + Warped Score SVG  →  Onsets_Layer / Warp_Score  → Visualizer
   - `add_layer(layer)` — Register a layer
   - `load_all_layers(audio_path, **kwargs)` — Load all layers; computes audio duration into `shared_data`
   - `draw()` — Render all layers onto a single Matplotlib figure
-  - `turn_to_PNG(filename, svg_warped_score, dpi)` — Export rasterized PNG
-  - `turn_to_SVG(filename, svg_warped_score)` — Export vector SVG with each layer as a named `<g>` group
-  - `combine_layers_with_score(filename, original_score, PNG_layer, layers_svg, maps_file)` — Composites the layer SVG onto the time-aligned score SVG
-  - `create_final_SVG(width, height, svg_layers, output_file)` — Stacks multiple full visualizations into a single composite SVG
+  - `turn_to_PNG(filename, svg_warped_score, dpi, print_output)` — Export rasterized PNG with exact pixel dimensions
+  - `turn_to_SVG(filename, svg_warped_score, show_axes, print_output)` — Export vector SVG with each layer as a named `<g>` group
+  - `combine_layers_with_score(filename, original_score, layers_svg, maps_file, PNG_layer, show_score, print_output)` — Composites the layer SVG (and optional PNG) onto the time-aligned score SVG
+  - `create_final_SVG(width, height, svg_layers, output_file, background_color, print_output)` — Stacks multiple SVG/PNG visualizations at given y-offsets into a single composite SVG
+  - `get_SVG_Root_Dimensions(svg_warped_score)` — Reads width/height from an SVG's root element
+  - `get_timeAxis_attributes(svg_warped_score)` — Reads the total timeline duration and pixel length from a warped score's `timeAxis` group
 
 ### `src/functions/Beat_Layers.py`
 Beat visualization layers built on top of the [**BeatThis!**](https://github.com/CPJKU/beat_this) beat tracking algorithm.
@@ -107,7 +109,11 @@ Beat visualization layers built on top of the [**BeatThis!**](https://github.com
 All beat layers share a secondary y-axis (`ax2`, 0–100%) via the `BeatLayer` base class.
 
 ### `src/functions/Audio_Layers.py`
-- **`Spectrogram`** — Computes and renders a Mel-scale spectrogram. Configurable frequency window (`freq_window`) and colormap (`color_map`).
+| Class | Description |
+|---|---|
+| `Spectrogram` | Mel-scale spectrogram. Configurable frequency window (`freq_window`) and colormap (`color_map`) |
+| `Chromagram` | Chroma (pitch class) representation via CQT, with pitch class labels |
+| `Waveform` | Amplitude waveform, optionally normalized (`normalize`) |
 
 ### `src/functions/warp_score.py`
 Utilities for score–audio alignment and SVG compositing.
@@ -116,7 +122,7 @@ Utilities for score–audio alignment and SVG compositing.
 |---|---|
 | `Onsets_Layer` | Renders note onset times (from MAPS JSON) as vertical dashed lines |
 | `Warp_Score` | Parses warped score SVGs; extracts time axis bounds, element translations, and viewBox geometry for pixel-accurate alignment |
-| `TXT_to_Maps(txt_file, output_file)` | Converts tab-separated onset annotation files to `.maps.json` format |
+| `TXT_to_Maps(txt_maps_file, output_file)` | Converts tab-separated onset annotation files to `.maps.json` format |
 
 ---
 
@@ -125,6 +131,8 @@ Utilities for score–audio alignment and SVG compositing.
 ```python
 from src.functions import (
     Spectrogram,
+    Chromagram,
+    Waveform,
     Onsets_Layer,
     BeatProbabilityLayer,
     DownbeatProbabilityLayer,
@@ -185,12 +193,16 @@ See [examples/BWV856_EXAMPLE2.py](examples/BWV856_EXAMPLE2.py) for a complete de
 3. Layer SVG export
 4. Score compositing with `combine_layers_with_score()`
 
-See [examples/BWV856_COMBINE.py](examples/BWV856_COMBINE.py) for stacking multiple performance visualizations into a single comparative SVG.
+See [examples/BWV856_COMBINE.py](examples/BWV856_COMBINE.py) and [examples/BWV856_EXAMPLE3 SelfComparison copy.py](examples/BWV856_EXAMPLE3%20SelfComparison%20copy.py) for stacking multiple performance visualizations into a single comparative SVG using `create_final_SVG()`.
+
+See [examples/Figure521.py](examples/Figure521.py), [examples/Figure522.py](examples/Figure522.py), [examples/Figure523.py](examples/Figure523.py) and [examples/Figure524.py](examples/Figure524.py) for smaller, focused examples combining `Spectrogram`, `Chromagram`, `Waveform`, `Onsets_Layer` and the beat layers.
 
 ### Converting Annotation Files
 
+`TXT_to_Maps` is not re-exported at the package level; import it directly from `warp_score`:
+
 ```python
-from src.functions import TXT_to_Maps  # re-exported via warp_score
+from src.functions.warp_score import TXT_to_Maps
 
 TXT_to_Maps("annotations/performance.txt", output_file="performance.maps.json")
 ```
@@ -224,38 +236,38 @@ LayerIt!/
 ├── requirements.txt
 ├── agents.md
 ├── src/
-│   └── functions/
-│       ├── __init__.py
-│       ├── visualization_system.py   # Layer ABC + Visualizer
-│       ├── Beat_Layers.py            # BeatThis! layers
-│       ├── Audio_Layers.py            # Mel spectrogram, chromagram, waveform layers
-│       └── warp_score.py             # Score alignment, Onsets_Layer, Warp_Score
-├── src/input_files/
-│   └── BWV856/
-│       ├── BWV856.mei
-│       ├── bwv856 LouJ01 asap.maps
-│       ├── Performance1/             # Andras Schiff
-│       ├── Performance2/             # Glenn Gould
-│       └── Performance3/             # Marta Argherich
+│   ├── functions/
+│   │   ├── __init__.py
+│   │   ├── visualization_system.py   # Layer ABC + Visualizer
+│   │   ├── Beat_Layers.py            # Run_BeatThis + BeatThis! layers
+│   │   ├── Audio_Layers.py           # Spectrogram, Chromagram, Waveform layers
+│   │   └── warp_score.py             # Onsets_Layer, Warp_Score, TXT_to_Maps
+│   └── input_files/
+│       ├── BWV856/
+│       │   ├── BWV856.mei
+│       │   ├── bwv856 LouJ01 asap.maps
+│       │   ├── Performance1/         # Andras Schiff
+│       │   ├── Performance2/         # Glenn Gould
+│       │   ├── Performance3/         # Marta Argherich
+│       │   └── TXTS/                 # Raw onset annotations (.txt)
+│       ├── Chopin_op10_ScoreWarpDemo/
+│       ├── ClairDeLune/
+│       └── PreludeN2/
 ├── examples/
 │   ├── BWV856_EXAMPLE1.py
 │   ├── BWV856_EXAMPLE2.py
 │   ├── BWV856_EXAMPLE2_SelfComparison.py
+│   ├── BWV856_EXAMPLE3 SelfComparison copy.py
 │   ├── BWV856_COMBINE.py
+│   ├── BWV856_FIGURE5_2_1.py
+│   ├── Figure521.py
+│   ├── Figure522.py
+│   ├── Figure523.py
+│   ├── Figure524.py
+│   ├── LBD_Figure.py
 │   └── Turn_txt_into_MAPS.py
 └── output/
 ```
-
----
-
-## Development Notes
-
-- New layers must inherit from `visualization_system.Layer` and implement `load_data()` and `draw()`
-- Implement `to_svg_group(shared_data)` to support vector SVG export for a new layer
-- All comments use `''' '''` triple-quote style; never `#`
-- Do not remove commented-out code segments
-- Before adding new dependencies, add them to `requirements.txt`
-- All output files go to `output/`
 
 ---
 
