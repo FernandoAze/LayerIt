@@ -289,6 +289,8 @@ class Visualizer:
         ''' Get axis limits for coordinate conversion '''
         x_min, x_max = ax.get_xlim()
         y_min, y_max = ax.get_ylim()
+        logit_axis = self.shared_data.get("ax2")
+        logit_y_min, logit_y_max = logit_axis.get_ylim() if logit_axis is not None else (None, None)
         
         ''' Store axis info for layer SVG conversion '''
         self.shared_data["svg_context"] = {
@@ -296,10 +298,12 @@ class Visualizer:
             "x_max": x_max,
             "y_min": y_min,
             "y_max": y_max,
+            "logit_y_min": logit_y_min,
+            "logit_y_max": logit_y_max,
             "width_px": width_px,
             "height_px": height_px,
             "show_axes": show_axes,
-            "probability_axes_added": False,
+            "logit_axes_added": False,
         }
         
         svg_groups = []

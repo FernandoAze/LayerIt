@@ -100,13 +100,13 @@ Beat visualization layers built on top of the [**BeatThis!**](https://github.com
 | Class / Function | Description |
 |---|---|
 | `Run_BeatThis(audio_path, output_path)` | Runs BeatThis! inference on a WAV file; saves beat/downbeat logits and detected events to `.npz` |
-| `BeatProbabilityLayer` | Plots the raw beat probability curve as a line overlay |
-| `DownbeatProbabilityLayer` | Plots the raw downbeat probability curve as a line overlay |
+| `BeatProbabilityLayer` | Plots the raw beat logit curve as a line overlay |
+| `DownbeatProbabilityLayer` | Plots the raw downbeat logit curve as a line overlay |
 | `BeatAccurateLayer` | Renders detected beat and downbeat positions as vertical marker lines |
 | `BeatWindowLayer` | Highlights beat confidence windows; opacity gradient from threshold to peak |
 | `DownbeatWindowLayer` | Highlights downbeat confidence windows; opacity gradient from threshold to peak |
 
-All beat layers share a secondary y-axis (`ax2`, 0–100%) via the `BeatLayer` base class.
+All beat layers share a secondary logit y-axis (`ax2`) via the `BeatLayer` base class. A logit of `0` corresponds to a sigmoid probability of 50%.
 
 ### `src/functions/Audio_Layers.py`
 | Class | Description |

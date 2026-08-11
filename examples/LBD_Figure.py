@@ -7,16 +7,17 @@ script_dir = Path(__file__).parent
 root_dir = script_dir.parent
 output_dir = root_dir / "output"
 sys.path.insert(0, str(root_dir))
-input_parent_dir = str("src/input_files/Chopin_op10_ScoreWarpDemo")
+input_parent_dir = str("src/input_files/PreludeN2")
+
 
 from src.functions import *
 
-audio_file = str(root_dir / input_parent_dir / "Chopin_op10_no3_p11.wav")
-svg_score = str(root_dir / input_parent_dir / "Chopin_op10_no3_p11-mei.maps.json.svg")
-maps_file = str(root_dir / input_parent_dir / "My Chopin_op10_no3_p11-mei.maps.json")
-beat_file  = str(root_dir / input_parent_dir / "CHOPIN_BEAT.npz")
+audio_file = str(root_dir / input_parent_dir / "Prelude_n2_Cm.wav")
+svg_score = str(root_dir / input_parent_dir / "PreludeN2_WScore.svg")
+maps_file = str(root_dir / input_parent_dir / "OnsetsMei_PreludioN2.maps.json")
+beat_file  = str(root_dir / input_parent_dir / "beat_Bach.npz")
 
-Run_BeatThis(audio_path=audio_file, output_path=str(output_dir / "CHOPIN_BEAT.npz"))
+
 #================================ Spectrogram Layer ===============================
 viz_spec = Visualizer()
 spectrogramConfig = {"freq_window": (100, 1500),"color_map": "summer"}
