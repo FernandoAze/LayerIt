@@ -2,21 +2,15 @@
 - Python 3.12.3+
 
 ## Architecture
-BeatSpecVisual uses a modular Layer-based system for composable visualizations.
+LayerIt uses a modular Layer-based system for composable visualizations.
 All visualization components inherit from the `visualization_system.Layer` class.
 New visualizations should follow this pattern.
-LoadFiles class in src/functions/Load_Files.py is used to retrieve files that are used in the various classes and methods.
 
+Each layer receives its inputs through `load_data(**kwargs)` — files are passed directly as kwargs to `load_all_layers()` (e.g., `audio_path`, `maps_file`, `beat_file`). There is no `Load_Files` helper class.
 
 ## Layer implementation:
 - `load_data(**kwargs)` — Load and validate data, return bool
 - `draw(ax, shared_data)` — Draw visualization, return (lines, labels)
-
-## Data 
-- MAPS JSON: LoadFiles().load_maps()— contains obs_mean_onset times and ID for score elements. This is used by the scorewarp for the score alignment.
-- Beat analysis: LoadFiles().load_beat_data()
-- Score file: LoadFiles().load_score() - it is an SVG file image. 
-- Files that result from the output of methods, should be directed to `/output`
 
 ## Other Notes
 - Dont remove lines that are comments or commented out segments of the code with `#`.

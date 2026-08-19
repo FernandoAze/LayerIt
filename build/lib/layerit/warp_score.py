@@ -11,6 +11,7 @@ from PIL import Image
 import base64
 import io
 from pathlib import Path
+from sklearn import tree
 import soundfile
 import re
 
@@ -58,7 +59,6 @@ class Onsets_Layer(Layer):
             return [], []
         
         lines = []
-        labels = []
 
         for onset in self._data['onset_times']:
             line = ax.axvline(x=onset, color=self.onset_color,

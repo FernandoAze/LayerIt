@@ -124,6 +124,14 @@ class Visualizer:
     def show(self):
         plt.show()
 
+    def getSVG_Score_Height(self, svg_score: str, maps_json_file: str) -> Optional[float]:
+        '''
+        Extract the height of the score from the SVG file using the maps JSON for reference.
+        
+        Args:
+            svg_score: Path to the SVG score file
+            maps_json_file: Path to the maps JSON file containing note positions
+        '''
     def get_SVG_Root_Dimensions(self, svg_warped_score: str, print_output: bool = False):
 
         svg_tree = ET.parse(svg_warped_score)
@@ -375,16 +383,25 @@ class Visualizer:
         # Remove all margins and padding
         fig_export.subplots_adjust(left=0, right=1, top=1, bottom=0)
         
-        output_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'output')
-        os.makedirs(output_dir, exist_ok=True)
-        output_path = os.path.join(output_dir, filename)
-        fig_export.savefig(
-            output_path,
-            format='png',
-            dpi=dpi,
-            pad_inches=0,
-            facecolor='white'
-        )
+        # Define output directories (relative to parent folders from script location)
+        output_dirs = [
+            os.path.join(os.path.dirname(__file__), '..', 'input_files'),
+            os.path.join(os.path.dirname(__file__), '..', '..', 'output')
+        ]
+        
+        # Create directories if they don't exist and save to both locations
+        for output_dir in output_dirs:
+            os.makedirs(output_dir, exist_ok=True)
+            output_path = os.path.join(output_dir, filename)
+            
+            # Save figure as PNG with exact dimensions
+            fig_export.savefig(
+                output_path,
+                format='png',
+                dpi=dpi,
+                pad_inches=0,
+                facecolor='white'
+            )
         
         # Clean up the temporary figure
         plt.close(fig_export)
@@ -393,6 +410,117 @@ class Visualizer:
                 print(f"✅ PNG saved successfully: {filename} ---> ({width_px}x{height_px}px @ {dpi}dpi)")
         return output_path
         
+    def combine_layers_with_score(self, filename: str, original_score: str, layers_svg: str, maps_file: str, PNG_layer: Optional[str] = None, show_score: bool = True, print_output: bool = False):
+        ''' Combine PNG (optional) and layers SVG with score SVG by creating Layers group with scaled PNG and layer groups '''
+        try:
+            ''' Get timeAxis bounds to size the PNG and Layers group properly '''
+            from .warp_score import Warp_Score
+            ws = Warp_Score()
+            timeAxis_bounds = ws.get_timeAxis_bounds(original_score, print_output)
+            if timeAxis_bounds is None:
+                print("✗ Could not get timeAxis bounds")
+                return False
+            
+            timeAxis_first_x, timeAxis_last_x, timeline_width = timeAxis_bounds
+
+            ''' Parse original score SVG '''
+            svg_tree = ET.parse(original_score)
+            composite_svg = svg_tree.getroot()
+
+            ''' Register namespace '''
+            svg_ns = 'http://www.w3.org/2000/svg'
+            ET.register_namespace('', svg_ns)
+
+            ''' Hide all existing score children when show_score is False '''
+            if not show_score:
+                for child in list(composite_svg):
+                    child.set('display', 'none')
+
+            ns = {'svg': 'http://www.w3.org/2000/svg'}
+            
+            ''' Parse layers SVG to extract layer groups '''
+            layers_tree = ET.parse(layers_svg)
+            layers_root = layers_tree.getroot()
+            
+            ''' Extract only direct child layer groups from the layers SVG '''
+            layer_groups = layers_root.findall("./svg:g", ns)
+            
+            ''' If not found with namespace, try without '''
+            if len(layer_groups) == 0:
+                layer_groups = layers_root.findall("./g")
+            
+            ''' Create new Layers group positioned at timeAxis '''
+            layers_group = ET.Element('g', {
+                'class': 'Layers',
+                'transform': f'translate({timeAxis_first_x}, 0)',
+                'width': str(timeline_width),
+            })
+
+            ''' Optionally embed PNG as base64 and add to Layers group '''
+            if PNG_layer is not None:
+                png_img = Image.open(PNG_layer)
+                png_width, png_height = png_img.size
+
+                target_png_height = 110
+                scale_y = target_png_height / png_height
+
+                layers_group.set('height', str(int(png_height * scale_y)))
+
+                png_buffer = io.BytesIO()
+                png_img.save(png_buffer, format='PNG')
+                png_base64 = base64.b64encode(png_buffer.getvalue()).decode('utf-8')
+
+                png_image_elem = ET.Element('image', {
+                    'x': '0',
+                    'y': '0',
+                    # 'width': str(timeline_width),
+                    # 'height': str(int(png_height * scale_y)),
+                    'href': f'data:image/png;base64,{png_base64}'
+                })
+                layers_group.append(png_image_elem)
+            
+            ''' Add layer groups from layers SVG to the new Layers group '''
+            if len(layer_groups) > 0:
+                for layer_group in layer_groups:
+                    ''' Deep copy the layer group to avoid modifying the original tree '''
+                    layer_copy = ET.fromstring(ET.tostring(layer_group))
+                    layers_group.append(layer_copy)
+                if print_output:
+                    print(f"✓ Added {len(layer_groups)} layer groups to the new Layers group")
+            else:
+                if print_output:
+                    print("⚠ Warning: No layer groups found in layers SVG")
+            
+            ''' Find parent of timeAxis to insert Layers group before it '''
+            parent_map = {c: p for p in composite_svg.iter() for c in p}
+            time_axis = composite_svg.find(".//svg:g[@class='timeAxis']", ns)
+            if time_axis is None:
+                time_axis = composite_svg.find(".//g[@class='timeAxis']")
+            
+            if time_axis is not None:
+                time_axis_parent = parent_map.get(time_axis, composite_svg)
+                ''' Insert Layers group at the first position (before timeAxis) '''
+                time_axis_parent.insert(0, layers_group)
+            else:
+                ''' If no timeAxis found, append to root '''
+                composite_svg.append(layers_group)
+            
+            ''' Save modified SVG to output folder '''
+            root_dir = Path(__file__).parent.parent.parent
+            output_dir = root_dir / "output"
+            output_dir.mkdir(parents=True, exist_ok=True)
+            output_path = str(output_dir / filename)
+            
+            svg_tree.write(output_path, encoding='UTF-8', xml_declaration=True)
+            
+            if print_output:
+                print(f"✓ Layers group with PNG and layer groups added and saved: {output_path}")
+            return output_path
+            
+        except Exception as e:
+            print(f"✗ Error combining PNG and layers with score: {e}")
+            return False
+
     def create_final_SVG(self, width: int, height: int, svg_layers: List[Tuple[str, float]], output_file: str, background_color: str = '#ffffff', print_output: bool = False):
         '''
         Combine multiple SVG files into a single final SVG with each as a separate nested SVG with y-offsets.

@@ -59,7 +59,7 @@ def Run_BeatThis(audio_path, output_path: str = None, print_output: bool = False
     module_dir = Path(__file__).parent
     output_dir = module_dir.parent / "input_files" / "beat_this_analysis"
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_file = output_dir / "beat_activation.npz"
+    output_file = output_dir / "beat_probs.npz"
     
     if print_output:
         print("✓ Saving output files...")
@@ -68,8 +68,8 @@ def Run_BeatThis(audio_path, output_path: str = None, print_output: bool = False
 
     np.savez(output_path,
             beat_times=beat_times,
-            beat_activation=beat_logits.numpy(),
-            downbeat_activation=downbeat_logits.numpy(),
+            beat_probs=beat_logits.numpy(),
+            downbeat_probs=downbeat_logits.numpy(),
             detected_beats=detected_beats,
             detected_downbeats=detected_downbeats)
     if print_output:
@@ -103,43 +103,6 @@ class BeatLayer(Layer):
             print(f"✗ {self.name} error: {e}")
             return None
     
-    def _normalize_threshold(self, threshold: float) -> float:
-        '''Convert threshold to 0-100 scale if needed'''
-        return threshold * 100 if threshold <= 1.0 else threshold
-
-    def _probability_threshold_to_logit(self, threshold: float) -> float:
-        '''Convert a percentage threshold to the equivalent raw logit threshold.'''
-        probability = np.clip(threshold / 100, np.finfo(float).eps, 1 - np.finfo(float).eps)
-        return float(np.log(probability / (1 - probability)))
-
-    def _find_windows(self, probs: np.ndarray) -> List[Tuple[int, int, float]]:
-        '''Find contiguous regions where probability exceeds logit_threshold.'''
-        above_threshold = probs >= self.logit_threshold
-
-        windows = []
-        in_window = False
-        window_start = 0
-        window_probs = []
-
-        for i, is_above in enumerate(above_threshold):
-            if is_above:
-                if not in_window:
-                    window_start = i
-                    in_window = True
-                window_probs.append(probs[i])
-            else:
-                if in_window:
-                    peak_prob = np.max(window_probs)
-                    windows.append((window_start, i - 1, peak_prob))
-                    in_window = False
-                    window_probs = []
-
-        if in_window:
-            peak_prob = np.max(window_probs)
-            windows.append((window_start, len(probs) - 1, peak_prob))
-
-        return windows
-
     def _logit_axis_limits(self, logits: np.ndarray) -> Tuple[float, float]:
         '''Return symmetric logit limits that include the zero decision boundary.'''
         max_abs_logit = np.max(np.abs(logits))
@@ -237,7 +200,7 @@ class BeatLayer(Layer):
         
         Args:
             shared_data: Shared visualization data
-            prob_key: Key for probability data in self._data (e.g., 'beat_activation', 'downbeat_activation')
+            prob_key: Key for probability data in self._data (e.g., 'beat_probs', 'downbeat_probs')
             svg_class: CSS class for the SVG group (e.g., 'beat-probability')
             opacity: Optional opacity for the polyline (default 1.0)
         '''
@@ -277,7 +240,7 @@ class BeatProbabilityLayer(BeatLayer):
         self.line_width = line_width
     
     def load_data(self, beat_file: str = None, print_output: bool = False, **kwargs) -> bool:
-        data = self._load_npz_data(beat_file, ['beat_times', 'beat_activation'])
+        data = self._load_npz_data(beat_file, ['beat_times', 'beat_probs'])
         if data is None:
             return False
         self._data = data
@@ -290,15 +253,15 @@ class BeatProbabilityLayer(BeatLayer):
             print(f"✗ {self.name}: No data loaded")
             return [], []
         
-        ax2 = self._setup_logit_axis(ax, shared_data, self._data["beat_activation"])
+        ax2 = self._setup_logit_axis(ax, shared_data, self._data["beat_probs"])
         
-        line, = ax2.plot(self._data["beat_times"], self._data["beat_activation"], '-', 
+        line, = ax2.plot(self._data["beat_times"], self._data["beat_probs"], '-', 
                 color=self.color, linewidth=self.line_width, label='Beat Logit')
         return [line], ['Beat Logit']
     
     def to_svg_group(self, shared_data: Dict[str, Any]) -> Optional[str]:
-        '''Convert beat activation curve to SVG polyline'''
-        return self._probability_to_svg_group(shared_data, 'beat_activation', 'beat-probability', line_width=self.line_width)
+        '''Convert beat probability curve to SVG polyline'''
+        return self._probability_to_svg_group(shared_data, 'beat_probs', 'beat-probability', line_width=self.line_width)
 
 
 class DownbeatProbabilityLayer(BeatLayer):
@@ -310,7 +273,7 @@ class DownbeatProbabilityLayer(BeatLayer):
         self.line_width = line_width
     
     def load_data(self, beat_file: str = None, print_output: bool = False, **kwargs) -> bool:
-        data = self._load_npz_data(beat_file, ['beat_times', 'downbeat_activation'])
+        data = self._load_npz_data(beat_file, ['beat_times', 'downbeat_probs'])
         if data is None:
             return False
         self._data = data
@@ -323,15 +286,15 @@ class DownbeatProbabilityLayer(BeatLayer):
             print(f"✗ {self.name}: No data loaded")
             return [], []
         
-        ax2 = self._setup_logit_axis(ax, shared_data, self._data["downbeat_activation"])
+        ax2 = self._setup_logit_axis(ax, shared_data, self._data["downbeat_probs"])
         
-        line, = ax2.plot(self._data["beat_times"], self._data["downbeat_activation"], '-',
+        line, = ax2.plot(self._data["beat_times"], self._data["downbeat_probs"], '-',
                 color=self.color, linewidth=self.line_width, label='Downbeat Logit', alpha=0.9)
         return [line], ['Downbeat Logit']
     
     def to_svg_group(self, shared_data: Dict[str, Any]) -> Optional[str]:
-        '''Convert downbeat activation curve to SVG polyline'''
-        return self._probability_to_svg_group(shared_data, 'downbeat_activation', 'downbeat-probability', opacity=0.9, line_width=self.line_width)
+        '''Convert downbeat probability curve to SVG polyline'''
+        return self._probability_to_svg_group(shared_data, 'downbeat_probs', 'downbeat-probability', opacity=0.9, line_width=self.line_width)
 
 class BeatAccurateLayer(BeatLayer):
     """Visualizes detected beat times as vertical lines."""
@@ -432,12 +395,69 @@ class BeatWindowLayer(BeatLayer):
         self.color = color
         self.alpha_max = alpha_max
     
+    def _normalize_threshold(self, threshold: float) -> float:
+        '''Convert threshold to 0-100 scale if needed'''
+        return threshold * 100 if threshold <= 1.0 else threshold
+
+    def _probability_threshold_to_logit(self, threshold: float) -> float:
+        '''Convert a percentage threshold to the equivalent raw logit threshold.'''
+        probability = np.clip(threshold / 100, np.finfo(float).eps, 1 - np.finfo(float).eps)
+        return float(np.log(probability / (1 - probability)))
+    
+    def _find_windows(self, probs: np.ndarray) -> List[Tuple[int, int, float]]:
+        '''
+        Find contiguous regions where probability exceeds threshold.
+        Returns list of (start_idx, end_idx, peak_prob) tuples.
+        '''
+        above_threshold = probs >= self.logit_threshold
+        
+        windows = []
+        in_window = False
+        window_start = 0
+        window_probs = []
+        
+        for i, is_above in enumerate(above_threshold):
+            if is_above:
+                if not in_window:
+                    window_start = i
+                    in_window = True
+                window_probs.append(probs[i])
+            else:
+                if in_window:
+                    peak_prob = np.max(window_probs)
+                    windows.append((window_start, i - 1, peak_prob))
+                    in_window = False
+                    window_probs = []
+        
+        ''' Handle case where window extends to end of data '''
+        if in_window:
+            peak_prob = np.max(window_probs)
+            windows.append((window_start, len(probs) - 1, peak_prob))
+        
+        return windows
+    
+    def _calculate_opacity(self, idx: int, start_idx: int, end_idx: int, peak_prob: float, 
+                          probs: np.ndarray) -> float:
+        '''
+        Calculate opacity for a point in the window.
+        Opacity = 1.0 at peak, 0.0 at threshold boundaries.
+        '''
+        current_logit = probs[idx]
+        
+        ''' Distance from threshold (normalized 0-1, where 1 = at peak) '''
+        if peak_prob == self.logit_threshold:
+            return self.alpha_max
+        distance_from_threshold = (current_logit - self.logit_threshold) / (peak_prob - self.logit_threshold)
+        distance_from_threshold = np.clip(distance_from_threshold, 0, 1)
+        
+        return distance_from_threshold * self.alpha_max
+    
     def load_data(self, beat_file: str = None, print_output: bool = False, **kwargs) -> bool:
-        data = self._load_npz_data(beat_file, ['beat_times', 'beat_activation'])
+        data = self._load_npz_data(beat_file, ['beat_times', 'beat_probs'])
         if data is None:
             return False
         self._data = data
-        windows = self._find_windows(self._data['beat_activation'])
+        windows = self._find_windows(self._data['beat_probs'])
         if print_output==True:    
             print(f"✓ {self.name}: Loaded beat data with threshold {self.beat_window:.1f}%, found {len(windows)} windows")
         return True
@@ -447,10 +467,10 @@ class BeatWindowLayer(BeatLayer):
             print(f"✗ {self.name}: No data loaded")
             return [], []
         
-        ax2 = self._setup_logit_axis(ax, shared_data, self._data['beat_activation'])
+        ax2 = self._setup_logit_axis(ax, shared_data, self._data['beat_probs'])
         beat_times = self._data['beat_times']
-        beat_activation = self._data['beat_activation']
-        windows = self._find_windows(beat_activation)
+        beat_probs = self._data['beat_probs']
+        windows = self._find_windows(beat_probs)
         
         rectangles = []
         for start_idx, end_idx, peak_prob in windows:
@@ -473,12 +493,12 @@ class BeatWindowLayer(BeatLayer):
         
         ctx = shared_data["svg_context"]
         beat_times = self._data.get("beat_times", [])
-        beat_activation = self._data.get("beat_activation", [])
+        beat_probs = self._data.get("beat_probs", [])
         
         if len(beat_times) == 0:
             return None
         
-        windows = self._find_windows(beat_activation)
+        windows = self._find_windows(beat_probs)
         if len(windows) == 0:
             return None
         
@@ -539,12 +559,69 @@ class DownbeatWindowLayer(BeatLayer):
         self.color = color
         self.alpha_max = alpha_max
     
+    def _normalize_threshold(self, threshold: float) -> float:
+        '''Convert threshold to 0-100 scale if needed'''
+        return threshold * 100 if threshold <= 1.0 else threshold
+
+    def _probability_threshold_to_logit(self, threshold: float) -> float:
+        '''Convert a percentage threshold to the equivalent raw logit threshold.'''
+        probability = np.clip(threshold / 100, np.finfo(float).eps, 1 - np.finfo(float).eps)
+        return float(np.log(probability / (1 - probability)))
+    
+    def _find_windows(self, probs: np.ndarray) -> List[Tuple[int, int, float]]:
+        '''
+        Find contiguous regions where probability exceeds threshold.
+        Returns list of (start_idx, end_idx, peak_prob) tuples.
+        '''
+        above_threshold = probs >= self.logit_threshold
+        
+        windows = []
+        in_window = False
+        window_start = 0
+        window_probs = []
+        
+        for i, is_above in enumerate(above_threshold):
+            if is_above:
+                if not in_window:
+                    window_start = i
+                    in_window = True
+                window_probs.append(probs[i])
+            else:
+                if in_window:
+                    peak_prob = np.max(window_probs)
+                    windows.append((window_start, i - 1, peak_prob))
+                    in_window = False
+                    window_probs = []
+        
+        ''' Handle case where window extends to end of data '''
+        if in_window:
+            peak_prob = np.max(window_probs)
+            windows.append((window_start, len(probs) - 1, peak_prob))
+        
+        return windows
+    
+    def _calculate_opacity(self, idx: int, start_idx: int, end_idx: int, peak_prob: float, 
+                          probs: np.ndarray) -> float:
+        '''
+        Calculate opacity for a point in the window.
+        Opacity = 1.0 at peak, 0.0 at threshold boundaries.
+        '''
+        current_logit = probs[idx]
+        
+        ''' Distance from threshold (normalized 0-1, where 1 = at peak) '''
+        if peak_prob == self.logit_threshold:
+            return self.alpha_max
+        distance_from_threshold = (current_logit - self.logit_threshold) / (peak_prob - self.logit_threshold)
+        distance_from_threshold = np.clip(distance_from_threshold, 0, 1)
+        
+        return distance_from_threshold * self.alpha_max
+    
     def load_data(self, beat_file: str = None, print_output: bool = False, **kwargs) -> bool:
-        data = self._load_npz_data(beat_file, ['beat_times', 'downbeat_activation'])
+        data = self._load_npz_data(beat_file, ['beat_times', 'downbeat_probs'])
         if data is None:
             return False
         self._data = data
-        windows = self._find_windows(self._data['downbeat_activation'])
+        windows = self._find_windows(self._data['downbeat_probs'])
         if print_output:
             print(f"✓ {self.name}: Loaded downbeat data with threshold {self.beat_window:.1f}%, found {len(windows)} windows")
         return True
@@ -554,10 +631,10 @@ class DownbeatWindowLayer(BeatLayer):
             print(f"✗ {self.name}: No data loaded")
             return [], []
         
-        ax2 = self._setup_logit_axis(ax, shared_data, self._data['downbeat_activation'])
+        ax2 = self._setup_logit_axis(ax, shared_data, self._data['downbeat_probs'])
         beat_times = self._data['beat_times']
-        downbeat_activation = self._data['downbeat_activation']
-        windows = self._find_windows(downbeat_activation)
+        downbeat_probs = self._data['downbeat_probs']
+        windows = self._find_windows(downbeat_probs)
         
         rectangles = []
         for start_idx, end_idx, peak_prob in windows:
@@ -580,12 +657,12 @@ class DownbeatWindowLayer(BeatLayer):
         
         ctx = shared_data["svg_context"]
         beat_times = self._data.get("beat_times", [])
-        downbeat_activation = self._data.get("downbeat_activation", [])
+        downbeat_probs = self._data.get("downbeat_probs", [])
         
         if len(beat_times) == 0:
             return None
         
-        windows = self._find_windows(downbeat_activation)
+        windows = self._find_windows(downbeat_probs)
         if len(windows) == 0:
             return None
         
@@ -623,3 +700,4 @@ class DownbeatWindowLayer(BeatLayer):
   </g>'''
         
         return svg_group
+

@@ -1,3 +1,18 @@
+Metadata-Version: 2.4
+Name: layerit
+Version: 0.1.0
+Summary: Framework for time-aligned, composable audio and score visualisations
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: matplotlib==3.10.9
+Requires-Dist: numpy==2.4.4
+Requires-Dist: librosa==0.11.0
+Requires-Dist: soundfile==0.13.1
+Requires-Dist: torch==2.11.0
+Requires-Dist: beat_this==1.1.0
+Requires-Dist: scikit-learn
+Requires-Dist: Pillow
+
 # LayerIt!
 
 **LayerIt!** is a modular, composable Python framework for the synchronized visualization of music performances and their corresponding musical scores. It integrates audio analysis, automatic beat tracking, and score alignment into a unified layer-based rendering pipeline, producing publication-quality raster (PNG) and vector (SVG) outputs.
@@ -86,8 +101,8 @@ MAPS JSON + Warped Score SVG  →  Onsets_Layer / Warp_Score  → Visualizer
                                                                   (per-layer groups)
                                                                          │
                                                                          ▼
-                                                               create_final_SVG()
-                                                               → Composite multi-panel SVG
+                                                               combine_layers_with_score()
+                                                               → Composite score + layers SVG
 ```
 
 ---
@@ -102,6 +117,7 @@ MAPS JSON + Warped Score SVG  →  Onsets_Layer / Warp_Score  → Visualizer
   - `draw()` — Render all layers onto a single Matplotlib figure
   - `turn_to_PNG(filename, svg_warped_score, dpi, print_output)` — Export rasterized PNG with exact pixel dimensions
   - `turn_to_SVG(filename, svg_warped_score, show_axes, print_output)` — Export vector SVG with each layer as a named `<g>` group
+  - `combine_layers_with_score(filename, original_score, layers_svg, maps_file, PNG_layer, show_score, print_output)` — Composites the layer SVG (and optional PNG) onto the time-aligned score SVG
   - `create_final_SVG(width, height, svg_layers, output_file, background_color, print_output)` — Stacks multiple SVG/PNG visualizations at given y-offsets into a single composite SVG
   - `get_SVG_Root_Dimensions(svg_warped_score)` — Reads width/height from an SVG's root element
   - `get_timeAxis_attributes(svg_warped_score)` — Reads the total timeline duration and pixel length from a warped score's `timeAxis` group
@@ -201,6 +217,12 @@ viz.turn_to_PNG("output/visualization.png", svg_warped_score="path/to/score.svg"
 
 ### Full Pipeline Example
 
+See [examples/BWV856_EXAMPLE2.py](examples/BWV856_EXAMPLE2.py) for a complete demonstration including:
+1. Beat detection with `Run_BeatThis()`
+2. Spectrogram PNG export
+3. Layer SVG export
+4. Score compositing with `combine_layers_with_score()`
+
 See [examples/BWV856_COMBINE.py](examples/BWV856_COMBINE.py) and [examples/BWV856_EXAMPLE3 SelfComparison copy.py](examples/BWV856_EXAMPLE3%20SelfComparison%20copy.py) for stacking multiple performance visualizations into a single comparative SVG using `create_final_SVG()`.
 
 See [examples/Figure521.py](examples/Figure521.py), [examples/Figure522.py](examples/Figure522.py), [examples/Figure523.py](examples/Figure523.py) and [examples/Figure524.py](examples/Figure524.py) for smaller, focused examples combining `Spectrogram`, `Chromagram`, `Waveform`, `Onsets_Layer` and the beat layers.
@@ -231,7 +253,8 @@ All outputs are directed to the `output/` directory by default.
 |---|---|---|
 | PNG | `turn_to_PNG()` | Rasterized at configurable DPI; dimensions matched to warped score |
 | SVG (layers) | `turn_to_SVG()` | Vector; each layer rendered as a named `<g class="layer ...">` group |
-| SVG (multi-panel) | `create_final_SVG()` | Multiple visualizations stacked vertically into a single composite SVG |
+| SVG (composite) | `combine_layers_with_score()` | Layers overlaid on the time-aligned score SVG |
+| SVG (multi-performance) | `create_final_SVG()` | Multiple visualizations stacked vertically |
 
 ---
 

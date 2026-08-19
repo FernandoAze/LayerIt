@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "layerit"
+version = "0.1.0"
+description = "Framework for time-aligned, composable audio and score visualisations"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "matplotlib==3.10.9",
+    "numpy==2.4.4",
+    "librosa==0.11.0",
+    "soundfile==0.13.1",
+    "torch==2.11.0",
+    "beat_this==1.1.0",
+    "scikit-learn",
+    "Pillow",
+]
+
+[tool.setuptools]
+packages = ["layerit"]
+package-dir = {"layerit" = "src/functions"}
