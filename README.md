@@ -109,8 +109,8 @@ Beat visualization layers that consume a pre-computed beat `.npz` file.
 | `BeatsLayer` | Renders detected beat positions (excluding downbeats) as vertical markers |
 | `DownbeatsLayer` | Renders detected downbeat positions as vertical markers |
 | `BeatAccurateLayer` | Legacy combined beats + downbeats marker layer |
-| `BeatWindowLayer` | Highlights beat confidence windows; opacity gradient from threshold to peak |
-| `DownbeatWindowLayer` | Highlights downbeat confidence windows; opacity gradient from threshold to peak |
+| `BeatWindowLayer` | Highlights user defined beat logits windows; opacity gradient from threshold to peak |
+| `DownbeatWindowLayer` | Highlightsuser defined downbeat logits windows; opacity gradient from threshold to peak |
 | `NPZ_to_BeatTXT` | Writes detected beats (excluding downbeats) from a `.npz` to a tab-separated TXT file |
 | `NPZ_to_DownbeatTXT` | Writes detected downbeats from a `.npz` to a tab-separated TXT file |
 
