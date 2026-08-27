@@ -2,8 +2,6 @@
 
 **LayerIt** is a modular, composable Python framework for the synchronized visualization of music performances and their corresponding musical scores. It integrates audio analysis, automatic beat tracking, and score alignment into a unified layer-based rendering pipeline, producing publication-quality raster (PNG) and vector (SVG) outputs.
 
-Presented as a Late-Breaking Demo at **ISMIR 2026**.
-
 ---
 
 ## Overview
