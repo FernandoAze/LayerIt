@@ -145,13 +145,13 @@ class DownbeatLogits(Curve):
 
 
 class BeatsLayer(Events):
-    """Visualizes detected beat times (excluding downbeats) as vertical markers."""
+    """Visualizes detected beat times as vertical markers."""
 
     def __init__(self, name: str = "Beat", color='red', line_width: float = 1, line_type: str = "solid"):
         super().__init__(name, color=color, line_width=line_width, line_type=line_type, secondary_axis=True, svg_class='beat-marker')
 
     def load_data(self, beat_file: str = None, print_output: bool = False, **kwargs) -> bool:
-        data = _load_beat_npz(beat_file, ['detected_beats', 'detected_downbeats'], self.name)
+        data = _load_beat_npz(beat_file, ['detected_beats'], self.name)
         if data is None:
             return False
         self._data = data
@@ -162,8 +162,7 @@ class BeatsLayer(Events):
     def _get_times(self, shared_data: Dict[str, Any]) -> Optional[np.ndarray]:
         if self._data is None:
             return None
-        downbeat_set = set(np.round(self._data["detected_downbeats"], 6))
-        return np.array([t for t in self._data["detected_beats"] if round(t, 6) not in downbeat_set])
+        return np.array(self._data["detected_beats"])
 
 
 class DownbeatsLayer(Events):
