@@ -186,39 +186,6 @@ class DownbeatsLayer(Events):
             return None
         return np.array(self._data["detected_downbeats"])
 
-
-class BeatAccurateLayer(Layer):
-    """Legacy combined view of detected beats and downbeats as vertical lines.
-
-    Kept for backward compatibility; new code can use BeatsLayer and
-    DownbeatsLayer directly.
-    """
-
-    def __init__(self, name: str = "Beat Accurate", beat_color='red', downbeat_color='blue', line_width: float = 1):
-        super().__init__(name)
-        self._beats = BeatsLayer(name="Beat", color=beat_color, line_width=line_width)
-        self._downbeats = DownbeatsLayer(name="Downbeat", color=downbeat_color, line_width=line_width)
-
-    def load_data(self, beat_file: str = None, print_output: bool = False, **kwargs) -> bool:
-        loaded_beats = self._beats.load_data(beat_file=beat_file, print_output=print_output, **kwargs)
-        loaded_downbeats = self._downbeats.load_data(beat_file=beat_file, print_output=print_output, **kwargs)
-        return loaded_beats and loaded_downbeats
-
-    def draw(self, ax: Axes, shared_data: Dict[str, Any]) -> Tuple[List, List]:
-        beat_lines, beat_labels = self._beats.draw(ax, shared_data)
-        downbeat_lines, downbeat_labels = self._downbeats.draw(ax, shared_data)
-        return beat_lines + downbeat_lines, beat_labels + downbeat_labels
-
-    def to_svg_group(self, shared_data: Dict[str, Any]) -> Optional[str]:
-        lines = self._beats._lines_svg(shared_data) + self._downbeats._lines_svg(shared_data)
-        if not lines:
-            return None
-        svg_group = f'''  <g id="{self.name}" class="layer beat-accurate">
-{chr(10).join(lines)}
-  </g>'''
-        return svg_group
-
-
 class BeatWindowLayer(Intervals):
     """Visualizes beat confidence windows with gradient transparency.
 

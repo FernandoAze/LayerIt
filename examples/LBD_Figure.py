@@ -28,4 +28,4 @@ fig.add_panel(Waveform(color=(1, 0, 1), normalize=True),
 
 fig.add_panel(MelSpec(freq_window=(100, 1500), color_map="summer"))
 
-fig.compose("LDB_FIG.svg", print_output=True)
+fig.compose("LBD_FIG.svg", print_output=True)

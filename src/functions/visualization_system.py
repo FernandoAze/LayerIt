@@ -46,24 +46,24 @@ class Layer(ABC):
 
 
 class Visualizer:
-    def __init__(self, figsize: Optional[Tuple[float, float]] = None, 
-                 plot_size_inPxl: Optional[Tuple[int, int]] = None, 
-                 dpi: int = 300,
-                 audio: Optional[str] = None,
+    def __init__(self, audio: Optional[str] = None,
                  score: Optional[str] = None,
                  maps: Optional[str] = None,
-                 beats: Optional[str] = None):
+                 beats: Optional[str] = None,
+                 figsize: Optional[Tuple[float, float]] = None, 
+                 plot_size_inPxl: Optional[Tuple[int, int]] = None, 
+                 dpi: int = 300):
         """
         Initialize Visualizer with customizable figure size.
         
         Args:
-            figsize: Figure size as (width, height) in inches. Default (14, 8) if neither figsize nor pixel_size specified.
-            pixel_size: Figure size as (width, height) in pixels. Converts to inches using dpi parameter.
-            dpi: Dots per inch for pixel-to-inch conversion. Default is 96 (standard screen DPI).
             audio: Path to the audio file shared by every panel added via add_panel().
             score: Path to the warped score SVG shared by every panel added via add_panel().
             maps: Path to the MAPS JSON alignment shared by every panel added via add_panel().
             beats: Path to the beat/downbeat .npz data shared by every panel added via add_panel().
+            figsize: Figure size as (width, height) in inches. Default (14, 8) if neither figsize nor pixel_size specified.
+            pixel_size: Figure size as (width, height) in pixels. Converts to inches using dpi parameter.
+            dpi: Dots per inch for pixel-to-inch conversion. Default is 96 (standard screen DPI).
         """
         self.layers: List[Layer] = []
         self.panels: List[Dict[str, Any]] = []
