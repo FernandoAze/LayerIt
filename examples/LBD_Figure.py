@@ -23,7 +23,7 @@ fig.add_panel(Onset(onset_color=(0, 0, 0), line_width=0.5, line_type="dashed"),
 
 fig.add_panel(Waveform(color=(1, 0, 1), normalize=True),
               BeatsLayer(line_width=1.5, color=('#E69F00'),line_type="dotted"),
-              DownbeatsLayer(line_width=1, color=('#0072B2')),
+              DownbeatsLayer(line_width=1.5, color=('#0072B2')),
               height_scale=0.5)
 
 fig.add_panel(MelSpec(freq_window=(100, 1500), color_map="summer"))

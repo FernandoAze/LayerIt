@@ -229,6 +229,9 @@ All outputs are directed to the `output/` directory by default.
 |---|---|---|
 | SVG (multi-panel) | `compose()` | Panels + warped score stacked vertically; each layer is a named `<g class="layer ...">` group |
 
+> **Viewing the SVG output.** Open the composed SVG in an up-to-date Chromium- or
+> Firefox-based browser — in an image editor/viewer, the score may render incorrectly.
+
 ---
 
 ## Project Structure
